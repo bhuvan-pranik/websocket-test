@@ -98,11 +98,18 @@ if __name__ == "__main__":
     ssl_keyfile = os.getenv("SSL_KEYFILE", "key.pem")
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8443"))
-    
-    uvicorn.run(
-        app,
-        host=host,
-        port=port,
-        ssl_keyfile=ssl_keyfile,
-        ssl_certfile=ssl_certfile
-    )
+
+    # Only enable SSL if the specified files exist. This prevents
+    # ``uvicorn`` from raising a FileNotFoundError when running without
+    # certificate files.
+    uvicorn_args = {
+        "host": host,
+        "port": port,
+    }
+    if os.path.exists(ssl_certfile) and os.path.exists(ssl_keyfile):
+        uvicorn_args.update({
+            "ssl_keyfile": ssl_keyfile,
+            "ssl_certfile": ssl_certfile,
+        })
+
+    uvicorn.run(app, **uvicorn_args)
